@@ -1,0 +1,50 @@
+
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.types import ParseMode
+from aiogram.utils import executor
+
+bot = Bot(token='6144298902:AAGL_e4ec1DuPZ8_iv_wT1ImZynhoUEYOwI')
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
+
+logging.basicConfig(level=logging.INFO)
+
+class Form(StatesGroup):
+    name = State()
+    race_type = State()
+
+@dp.message_handler(commands=['start'])
+async def start(message: types.Message):
+    await message.reply("Привет! Я бот для записи на марафон. Напиши свое ФИО.")
+
+    await Form.name.set()
+
+@dp.message_handler(state=Form.name)
+async def process_name(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['name'] = message.text
+
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(types.KeyboardButton('Полумарафон'))
+    keyboard.add(types.KeyboardButton('Марафон'))
+    await message.reply("Выбери тип забега:", reply_markup=keyboard)
+
+    await Form.next()
+
+@dp.message_handler(Text(equals=['Полумарафон', 'Марафон']), state=Form.race_type)
+async def process_race_type(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['race_type'] = message.text
+
+        text = f"Ты записался на {data['race_type']}! Спасибо, {data['name']}!"
+        await bot.send_message(message.chat.id, text, parse_mode=ParseMode.HTML)
+
+        await state.finish()
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
