@@ -1,5 +1,7 @@
-
 import logging
+import asyncio
+from docx import Document
+from docx.shared import Inches
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -8,7 +10,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ParseMode
 from aiogram.utils import executor
 
-bot = Bot(token='6144298902:AAGL_e4ec1DuPZ8_iv_wT1ImZynhoUEYOwI')
+
+bot = Bot(token="6144298902:AAGL_e4ec1DuPZ8_iv_wT1ImZynhoUEYOwI")
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
@@ -41,6 +44,10 @@ async def process_race_type(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['race_type'] = message.text
 
+        document = Document('marathon_records.docx')
+        document.add_paragraph(name + ' - ' + race_type)
+        document.save('marathon_records.docx')
+        
         text = f"Ты записался на {data['race_type']}! Спасибо, {data['name']}!"
         await bot.send_message(message.chat.id, text, parse_mode=ParseMode.HTML)
 
